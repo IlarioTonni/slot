@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slot Machine</title>
+    <style>
+        body {
+            background-color: #0000a7;
+            color: #f7fa52;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            margin: 20px 0;
+        }
+
+        #slotMachine {
+            display: inline-block;
+            margin: 20px 0;
+        }
+
+        .row {
+            display: flex;
+            justify-content: center;
+            margin: 5px 0;
+        }
+
+        .slot {
+            width: 100px;
+            height: 100px;
+            margin: 0 5px;
+            border: 2px solid #f7fa52;
+        }
+
+        #moneyInput {
+            margin: 10px 0;
+            padding: 5px;
+            font-size: 16px;
+            text-align: center;
+            background-color: #4c3cf1;
+            color: #f7fa52;
+            border: none;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4c3cf1;
+            color: #f7fa52;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background-color: #333;
+            cursor: not-allowed;
+        }
+
+        .control {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Slot Machine</h1>
+    <div id="slotMachine">
+        <div class="row">
+            <img id="img00" class="slot" src="orange.png">   
+            <img id="img01" class="slot" src="orange.png">
+            <img id="img02" class="slot" src="orange.png">
+            <img id="img03" class="slot" src="orange.png">
+            <img id="img04" class="slot" src="orange.png">
+        </div>
+        <div class="row">
+            <img id="img10" class="slot" src="orange.png">
+            <img id="img11" class="slot" src="orange.png">
+            <img id="img12" class="slot" src="orange.png">
+            <img id="img13" class="slot" src="orange.png">
+            <img id="img14" class="slot" src="orange.png">
+        </div>
+        <div class="row">
+            <img id="img20" class="slot" src="orange.png">
+            <img id="img21" class="slot" src="orange.png">
+            <img id="img22" class="slot" src="orange.png">
+            <img id="img23" class="slot" src="orange.png">
+            <img id="img24" class="slot" src="orange.png">
+        </div>
+    </div>
+    <div class="control">
+        <label for="moneyInput">Soldi: </label>
+        <input id="moneyInput" type="number" min="0" step="0.01">
+    </div>
+    <div class="control">
+        <button id="spinButton" onclick="gira()">Gira</button>
+        <button id="ctrlButton" onclick="ctrl()" disabled>Ctrl</button>
+    </div>
+    <div class="control">
+        <button onclick="incrementBet()" id="betPlus">+</button>
+        <button onclick="decrementBet()" id="betMinus">-</button>
+        <label id="betLabel">Puntata: 20</label>
+    </div>
+    <div class="control" id="modeControl">
+        <label>Modalità: </label>
+        <input type="radio" name="mode" value="easy" onchange="checkMode()"> Easy
+        <input type="radio" name="mode" value="medium" onchange="checkMode()"> Medium
+        <input type="radio" name="mode" value="hard" onchange="checkMode()"> Hard
+    </div>
+    <div id="message"></div>
+
+    <script>
+        const images = ["https://github.com/IlarioTonni/slot/commit/bfc4d32a431bf9522babda41a8153cc8fa0bdfa7?diff=unified&w=0#diff-761141aecc79305ba2ab342195993c428b1f377a7e2df5e8b0e864ee5e427da7", 
+                        "https://github.com/IlarioTonni/slot/commit/bfc4d32a431bf9522babda41a8153cc8fa0bdfa7#diff-b3547ca8d7e16f95d2e7ad1cf59c9b5e600a1cae909783e28ba717f8f484b78b",
+                        "https://github.com/IlarioTonni/slot/commit/bfc4d32a431bf9522babda41a8153cc8fa0bdfa7#diff-558fcb4976763aebc44ce1c3e7fe2a61dd3938186dab98b70d8b35520d512155", 
+                        "https://github.com/IlarioTonni/slot/commit/bfc4d32a431bf9522babda41a8153cc8fa0bdfa7#diff-7955684973d9bdf3bdcf2d08403ae56b0a518f7e1b4e9bff2d3d2afe312baf87",
+                        "https://github.com/IlarioTonni/slot/commit/bfc4d32a431bf9522babda41a8153cc8fa0bdfa7#diff-d5e41ceb5500241180bfc5de61d80d46c4cc91dfdfe3177c3d0b77ded2e9a578", 
+                        "https://github.com/IlarioTonni/slot/commit/bfc4d32a431bf9522babda41a8153cc8fa0bdfa7#diff-72df8ca60f1e50dd7728b8c455127e4e4577f59162ce7668ec20beaaadfbb966",
+                        "https://github.com/IlarioTonni/slot/commit/bfc4d32a431bf9522babda41a8153cc8fa0bdfa7#diff-326cf54d50f1dce0f1d958cf8e70956f4abae4f5914be330f65e8aa3c5490dda", 
+                        "https://github.com/IlarioTonni/slot/commit/bfc4d32a431bf9522babda41a8153cc8fa0bdfa7"];
+        const weights = [100, 100, 100, 100, 20, 20, 10, 1];
+        let money = 0;
+        let bet = 100;
+        let win = 0;
+        let matrix = [];
+        let firstSpin = true;
+
+        const moneyInput = document.getElementById('moneyInput');
+
+        moneyInput.addEventListener('input', function () {
+            money = parseFloat(this.value) || 0;
+            // Non aggiornare il valore qui per permettere all'utente di digitare liberamente
+        });
+
+        moneyInput.addEventListener('blur', function () {
+            money = parseFloat(this.value) || 0;
+            this.value = money.toFixed(2);
+            updateUI();
+        });
+
+        moneyInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                money = parseFloat(this.value) || 0;
+                this.value = money.toFixed(2);
+                updateUI();
+            }
+        });
+
+        function getRandomImage() {
+            let totalWeight = weights.reduce((a, b) => a + b, 0);
+            let random = Math.floor(Math.random() * totalWeight);
+            for (let i = 0; i < weights.length; i++) {
+                if (random < weights[i]) {
+                    return i;
+                }
+                random -= weights[i];
+            }
+        }
+
+        function generateMatrix() {
+            matrix = [];
+            for (let i = 0; i < 3; i++) {
+                let row = [];
+                for (let j = 0; j < 5; j++) {
+                    row.push(getRandomImage());
+                }
+                matrix.push(row);
+            }
+        }
+
+        function updateSlotImages() {
+            for (let i = 0; i < 3; i++) {
+                for (let j = 0; j < 5; j++) {
+                    let imgId = `img${i}${j}`;
+                    document.getElementById(imgId).src = images[matrix[i][j]];
+                }
+            }
+        }
+
+        function gira() {
+            if (money < bet) {
+                alert("Non hai abbastanza soldi per girare!");
+                return;
+            }
+
+            if (firstSpin) {
+                // Disabilita la selezione della modalità dopo il primo giro
+                disableModeSelection();
+                firstSpin = false;
+            }
+
+            money -= bet;
+            generateMatrix();
+            updateSlotImages();
+            checkVincite();
+            updateUI();
+
+            // Disabilita controlli mentre i rulli girano
+            disableControls();
+            document.getElementById('ctrlButton').disabled = false;
+        }
+
+        function checkMode() {
+            const modes = { "easy": 1000, "medium": 800, "hard": 500 };
+            const selectedMode = document.querySelector('input[name="mode"]:checked').value;
+            money = modes[selectedMode];
+            moneyInput.value = money.toFixed(2); // Formattare il valore iniziale
+            updateUI();
+        }
+
+        function checkVincite() {
+            const payout = {
+                0: { 3: 2, 4: 10, 5: 20 },
+                1: { 3: 2, 4: 10, 5: 20 },
+                2: { 3: 2, 4: 10, 5: 20 },
+                3: { 3: 2, 4: 10, 5: 20 },
+                4: { 3: 10, 4: 20, 5: 100 },
+                5: { 3: 10, 4: 20, 5: 100 },
+                6: { 3: 50, 4: 200, 5: 1000 },
+                7: { 1: 1, 2: 10, 3: 100, 4: 1000, 5: 10000 }
+            };
+            
+            win = 0;
+            let lines = [
+                matrix[0],
+                matrix[1],
+                matrix[2],
+                [matrix[0][0], matrix[1][1], matrix[2][2], matrix[1][3], matrix[0][4]],
+                [matrix[2][0], matrix[1][1], matrix[0][2], matrix[1][3], matrix[2][4]]
+            ];
+
+            for (let line of lines) {
+                let count = 1;
+                for (let i = 0; i < line.length - 1; i++) {
+                    if (line[i] === line[i + 1]) {
+                        count++;
+                    } else {
+                        if (payout[line[i]] && payout[line[i]][count]) {
+                            win += bet * payout[line[i]][count];
+                        }
+                        count = 1;
+                    }
+                }
+                if (payout[line[line.length - 1]] && payout[line[line.length - 1]][count]) {
+                    win += bet * payout[line[line.length - 1]][count];
+                }
+            }
+
+            if (win > 0) {
+                money += win;
+                document.getElementById('message').textContent = `Hai vinto: ${win}`;
+<!--        } else {
+<!--            document.getElementById('message').textContent = "Hai perso!";
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('moneyInput').value = money.toFixed(2);
+            document.getElementById('betLabel').textContent = `Puntata: ${bet}`;
+            document.getElementById('spinButton').disabled = money < bet;
+            document.getElementById('betPlus').disabled = money < bet + 10;
+            document.getElementById('betMinus').disabled = bet <= 10;
+        }
+
+        function disableControls() {
+            document.getElementById('moneyInput').disabled = true;
+            document.getElementById('spinButton').disabled = true;
+            document.getElementById('betPlus').disabled = true;
+            document.getElementById('betMinus').disabled = true;
+        }
+
+        function enableControls() {
+            document.getElementById('spinButton').disabled = false;
+            document.getElementById('betPlus').disabled = money < bet + 10;
+            document.getElementById('betMinus').disabled = bet <= 10;
+        }
+
+        function disableModeSelection() {
+            document.querySelectorAll('input[name="mode"]').forEach(modeInput => {
+                modeInput.disabled = true;
+            });
+        }
+
+        function incrementBet() {
+            if (money >= bet + 10) {
+                bet += 10;
+                updateUI();
+            }
+        }
+
+        function decrementBet() {
+            if (bet > 10) {
+                bet -= 10;
+                updateUI();
+            }
+        }
+
+        function ctrl() {
+            // Re-enable controls after spin
+            enableControls();
+            document.getElementById('ctrlButton').disabled = true;
+        }
+
+        // Funzione per inizializzare le immagini casualmente all'avvio
+        function initializeRandomImages() {
+            generateMatrix();
+            updateSlotImages();
+        }
+
+        // Chiamare la funzione di inizializzazione quando la pagina viene caricata
+        window.onload = function() {
+            initializeRandomImages();
+            updateUI(); // Aggiornare l'interfaccia utente con il valore iniziale della puntata
+        };
+    </script>
+</body>
+</html>
+
+
+<!--
+   0,00 -> "" + schema vincite O I D V A  + questione puntata che si adatta
+-->
